@@ -7,6 +7,7 @@ A modern, real-time chat application built with PHP, WebSockets, and MySQL. Feat
 - ✅ **User Authentication** - Register and login system
 - 💬 **Real-time Messaging** - Instant message delivery via WebSockets
 - 🔄 **Message History** - Persistent message storage in MySQL
+- 🔍 **Advanced Message Search** - Search through conversation history with filters
 - 👀 **Typing Indicators** - See when someone is typing
 - ✅ **Read Status** - Track message delivery and read status
 - 📱 **Responsive Design** - Works on desktop and mobile
@@ -80,9 +81,11 @@ ChatApp/
 │   ├── index.php          # Main chat interface
 │   ├── login.php          # Login/register page
 │   ├── logout.php         # Logout handler
+│   ├── search-interface.php # Search interface component
 │   └── api/               # API endpoints
 │       ├── send-message.php
 │       ├── get-messages.php
+│       ├── search-messages.php
 │       ├── mark-read.php
 │       ├── mark-conversation-read.php
 │       └── get-unread-count.php
@@ -125,6 +128,13 @@ The WebSocket server runs on `localhost:8080` by default. You can modify this in
 3. Press Enter or click "Send"
 4. Messages appear in real-time
 
+### Searching Messages
+1. Click the search icon in the header or press Ctrl+F
+2. Enter your search term in the search box
+3. Optionally use filters (user, date range, conversation)
+4. Click "Search" or press Enter
+5. Browse results and click on any message to open that conversation
+
 ## 🔒 Security Features
 
 - Password hashing using PHP's `password_hash()`
@@ -134,6 +144,15 @@ The WebSocket server runs on `localhost:8080` by default. You can modify this in
 - XSS protection with `htmlspecialchars()`
 
 ## 🚀 Advanced Features
+
+### Advanced Message Search
+- **Text Search**: Search for specific words or phrases in messages
+- **User Filter**: Filter messages by sender
+- **Date Range**: Search messages within specific date ranges
+- **Conversation Filter**: Search within specific conversations
+- **Highlighted Results**: Search terms are highlighted in results
+- **Pagination**: Navigate through large result sets
+- **Keyboard Shortcuts**: Use Ctrl+F to open search
 
 ### Typing Indicators
 When a user starts typing, other users will see a "typing..." indicator.

@@ -100,6 +100,21 @@ $recentMessages = $chat->getRecentMessages($currentUser['id']);
             background: rgba(255,255,255,0.3);
         }
         
+        .search-btn-header {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-right: 10px;
+        }
+        
+        .search-btn-header:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
         .chat-main {
             display: flex;
             flex: 1;
@@ -391,6 +406,9 @@ $recentMessages = $chat->getRecentMessages($currentUser['id']);
         <div class="chat-header">
             <h1><i class="fas fa-comments"></i> Chat App</h1>
             <div class="user-info">
+                <button class="search-btn-header" onclick="openSearch()" title="Search Messages (Ctrl+F)">
+                    <i class="fas fa-search"></i>
+                </button>
                 <div class="user-avatar">
                     <?php echo strtoupper(substr($_SESSION['username'], 0, 1)); ?>
                 </div>
@@ -439,6 +457,8 @@ $recentMessages = $chat->getRecentMessages($currentUser['id']);
             </div>
         </div>
     </div>
+
+    <?php include 'search-interface.php'; ?>
 
     <script src="js/app.js"></script>
 </body>

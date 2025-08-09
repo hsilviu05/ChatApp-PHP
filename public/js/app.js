@@ -98,12 +98,15 @@ function initWebSocket() {
     ws = new WebSocket('ws://localhost:8080');
     
     ws.onopen = function() {
-        console.log('Connected to chat server');
-        ws.send(JSON.stringify({
+        console.log('WebSocket connected successfully');
+        // Authenticate the user
+        const authMessage = {
             type: 'auth',
             user_id: currentUser.id,
             username: currentUser.username
-        }));
+        };
+        console.log('Sending auth message:', authMessage);
+        ws.send(JSON.stringify(authMessage));
     };
     
     ws.onmessage = function(event) {
@@ -122,11 +125,14 @@ function initWebSocket() {
 }
 
 function handleWebSocketMessage(data) {
+    console.log('WebSocket message received:', data);
+    
     switch (data.type) {
         case 'auth_success':
             console.log('Authentication successful');
             break;
         case 'message':
+            console.log('Incoming message:', data);
             handleIncomingMessage(data);
             break;
         case 'typing':
@@ -135,11 +141,30 @@ function handleWebSocketMessage(data) {
         case 'read':
             handleReadReceipt(data);
             break;
+        default:
+            console.log('Unknown message type:', data.type);
     }
 }
 
 function handleIncomingMessage(data) {
-    if (data.sender_id == currentReceiver || data.receiver_id == currentReceiver) {
+    console.log('Handling incoming message:', data);
+    console.log('Current receiver:', currentReceiver);
+    console.log('Current user:', currentUser);
+    
+    // Check if this message is part of the current conversation
+    // A message is in the current conversation if:
+    // - The sender is the current receiver, OR
+    // - The receiver is the current receiver, OR  
+    // - The sender is the current user (for sent messages)
+    const isCurrentConversation = (
+        data.sender_id == currentReceiver || 
+        data.receiver_id == currentReceiver ||
+        data.sender_id == currentUser.id
+    );
+    console.log('Is current conversation:', isCurrentConversation);
+    
+    if (isCurrentConversation) {
+        console.log('Displaying message in current conversation');
         // If it's a file message, we need to fetch the message with attachments from the database
         if (data.has_attachment && (!data.attachments || data.attachments.length === 0)) {
             // Fetch the latest message from this sender to get the attachments
@@ -147,9 +172,19 @@ function handleIncomingMessage(data) {
         } else {
             displayMessage(data);
         }
-        markAsRead(data.sender_id);
+        
+        // Mark as read if the message is from someone else
+        if (data.sender_id != currentUser.id) {
+            markAsRead(data.sender_id);
+        }
+    } else {
+        console.log('Message not in current conversation, updating unread count only');
     }
-    updateUnreadCount(data.sender_id);
+    
+    // Update unread count for the sender (if it's not from current user)
+    if (data.sender_id != currentUser.id) {
+        updateUnreadCount(data.sender_id);
+    }
 }
 
 function fetchLatestMessageWithAttachments(senderId, originalData) {
@@ -291,6 +326,7 @@ function displayMessages(messages) {
 }
 
 function displayMessage(message) {
+    console.log('Displaying message:', message);
     const container = document.getElementById('chat-messages');
     const isSent = message.sender_id == currentUser.id;
     
@@ -302,15 +338,17 @@ function displayMessage(message) {
     let attachmentsHtml = '';
     if (message.attachments && message.attachments.length > 0) {
         message.attachments.forEach(attachment => {
-            attachmentsHtml += `
-                <div class="file-attachment" onclick="downloadFile('${attachment.filename}')">
-                    <i class="fas ${getFileIcon(attachment.mime_type)} file-icon"></i>
-                    <div class="file-info">
-                        <div class="file-name">${attachment.original_filename}</div>
-                        <div class="file-size">${formatFileSize(attachment.file_size)}</div>
+            if (attachment && attachment.filename) { // Check if attachment is valid
+                attachmentsHtml += `
+                    <div class="file-attachment" onclick="downloadFile('${attachment.filename}')">
+                        <i class="fas ${getFileIcon(attachment.mime_type)} file-icon"></i>
+                        <div class="file-info">
+                            <div class="file-name">${attachment.original_filename || 'Unknown file'}</div>
+                            <div class="file-size">${formatFileSize(attachment.file_size || 0)}</div>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
         });
     }
     
@@ -334,6 +372,8 @@ function displayMessage(message) {
 }
 
 function getFileIcon(mimeType) {
+    if (!mimeType) return 'fa-file'; // Handle null/undefined mime types
+    
     if (mimeType.startsWith('image/')) return 'fa-image';
     if (mimeType === 'application/pdf') return 'fa-file-pdf';
     if (mimeType.includes('word')) return 'fa-file-word';
@@ -515,3 +555,5 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// Search functionality integration - functions are now defined in search-interface.php

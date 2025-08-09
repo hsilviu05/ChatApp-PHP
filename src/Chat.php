@@ -223,18 +223,122 @@ class Chat {
         return $this->getMessagesWithAttachments($userId1, $userId2, $limit);
     }
     
-    public function searchMessages($userId, $searchTerm, $limit = 50) {
-        $searchTerm = '%' . $searchTerm . '%';
-        $stmt = $this->db->prepare(
-            "SELECT m.*, u.username as sender_name
-             FROM messages m 
-             JOIN users u ON m.sender_id = u.id 
-             WHERE (m.sender_id = ? OR m.receiver_id = ?) 
-                AND m.message LIKE ?
-             ORDER BY m.created_at DESC
-             LIMIT ?"
+    public function searchMessages($userId, $searchTerm = '', $conversationId = null, $dateFrom = null, $dateTo = null, $senderId = null, $limit = 50, $offset = 0) {
+        $conditions = ["(m.sender_id = ? OR m.receiver_id = ?)"];
+        $params = [$userId, $userId];
+        
+        // Add search term condition
+        if (!empty($searchTerm)) {
+            $conditions[] = "m.message LIKE ?";
+            $params[] = '%' . $searchTerm . '%';
+        }
+        
+        // Add conversation filter
+        if ($conversationId) {
+            $conditions[] = "((m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = ?))";
+            $params[] = $userId;
+            $params[] = $conversationId;
+            $params[] = $conversationId;
+            $params[] = $userId;
+        }
+        
+        // Add date range filters
+        if ($dateFrom) {
+            $conditions[] = "m.created_at >= ?";
+            $params[] = $dateFrom . ' 00:00:00';
+        }
+        
+        if ($dateTo) {
+            $conditions[] = "m.created_at <= ?";
+            $params[] = $dateTo . ' 23:59:59';
+        }
+        
+        // Add sender filter
+        if ($senderId) {
+            $conditions[] = "m.sender_id = ?";
+            $params[] = $senderId;
+        }
+        
+        $whereClause = implode(' AND ', $conditions);
+        
+        // Get total count for pagination
+        $countStmt = $this->db->prepare(
+            "SELECT COUNT(*) as total FROM messages m WHERE $whereClause"
         );
-        $stmt->execute([$userId, $userId, $searchTerm, $limit]);
-        return $stmt->fetchAll();
+        $countStmt->execute($params);
+        $total = $countStmt->fetch()['total'];
+        
+        // Very simple query to get it working
+        $sql = "SELECT m.*, 
+                       u.username as sender_name,
+                       m.receiver_id as conversation_user_id,
+                       'Unknown' as conversation_username
+                FROM messages m 
+                JOIN users u ON m.sender_id = u.id 
+                WHERE $whereClause
+                ORDER BY m.created_at DESC
+                LIMIT ? OFFSET ?";
+        
+        // Create separate params array for the main query
+        $mainParams = $params;
+        $mainParams[] = $limit;
+        $mainParams[] = $offset;
+        
+
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($mainParams);
+        $messages = $stmt->fetchAll();
+        
+        // Debug logging
+        error_log("Search SQL: " . $sql);
+        error_log("Search params: " . json_encode($mainParams));
+        error_log("Search results count: " . count($messages));
+        error_log("Where clause: " . $whereClause);
+        
+
+        
+        // Process messages to add context and format dates
+        foreach ($messages as &$message) {
+            // Add search context (highlight search term)
+            if (!empty($searchTerm)) {
+                $message['message_highlighted'] = $this->highlightSearchTerm($message['message'], $searchTerm);
+            }
+            
+            // Format date
+            if (isset($message['created_at'])) {
+                $timestamp = strtotime($message['created_at']);
+                $message['formatted_date'] = date('M j, Y g:i A', $timestamp);
+                $message['created_at'] = date('c', $timestamp);
+            }
+            
+            // Add conversation context
+            $message['is_from_me'] = $message['sender_id'] == $userId;
+            
+            // Get conversation username - fix the logic
+            $convUserId = ($message['sender_id'] == $userId) ? $message['receiver_id'] : $message['sender_id'];
+            $convStmt = $this->db->prepare("SELECT username FROM users WHERE id = ?");
+            $convStmt->execute([$convUserId]);
+            $convUser = $convStmt->fetch();
+            $message['conversation_username'] = $convUser ? $convUser['username'] : 'Unknown';
+            $message['conversation_user_id'] = $convUserId;
+        }
+        
+        return [
+            'messages' => $messages,
+            'total' => $total,
+            'has_more' => ($offset + $limit) < $total
+        ];
+    }
+    
+    private function highlightSearchTerm($text, $searchTerm) {
+        $searchTerm = trim($searchTerm);
+        if (empty($searchTerm)) {
+            return $text;
+        }
+        
+        // Case-insensitive replacement with highlighting
+        $pattern = '/(' . preg_quote($searchTerm, '/') . ')/i';
+        return preg_replace($pattern, '<mark class="search-highlight">$1</mark>', $text);
     }
 }

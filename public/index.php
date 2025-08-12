@@ -100,6 +100,21 @@ $recentMessages = $chat->getRecentMessages($currentUser['id']);
             background: rgba(255,255,255,0.3);
         }
         
+        .groups-btn-header {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-right: 10px;
+        }
+        
+        .groups-btn-header:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
         .search-btn-header {
             background: rgba(255,255,255,0.2);
             border: none;
@@ -406,6 +421,9 @@ $recentMessages = $chat->getRecentMessages($currentUser['id']);
         <div class="chat-header">
             <h1><i class="fas fa-comments"></i> Chat App</h1>
             <div class="user-info">
+                <button class="groups-btn-header" onclick="openGroups()" title="Groups & Channels">
+                    <i class="fas fa-users"></i>
+                </button>
                 <button class="search-btn-header" onclick="openSearch()" title="Search Messages (Ctrl+F)">
                     <i class="fas fa-search"></i>
                 </button>
@@ -459,6 +477,7 @@ $recentMessages = $chat->getRecentMessages($currentUser['id']);
     </div>
 
     <?php include 'search-interface.php'; ?>
+    <?php include 'groups-interface.php'; ?>
 
     <script src="js/app.js"></script>
 </body>

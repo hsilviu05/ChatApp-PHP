@@ -41,6 +41,9 @@ class ChatWebSocket implements MessageComponentInterface {
             case 'message':
                 $this->handleMessage($from, $data);
                 break;
+            case 'group_message':
+                $this->handleGroupMessage($from, $data);
+                break;
             case 'typing':
                 $this->handleTyping($from, $data);
                 break;
@@ -139,6 +142,44 @@ class ChatWebSocket implements MessageComponentInterface {
                     'is_typing' => $isTyping
                 ]));
                 break;
+            }
+        }
+    }
+    
+    private function handleGroupMessage($from, $data) {
+        $senderId = $data['sender_id'] ?? null;
+        $groupId = $data['group_id'] ?? null;
+        $message = $data['message'] ?? '';
+        $timestamp = $data['timestamp'] ?? date('Y-m-d H:i:s');
+        
+        if (!$senderId || !$groupId || !$message) {
+            echo "Invalid group message data\n";
+            return;
+        }
+        
+        // Save message to database if not already saved
+        if (!isset($data['saved'])) {
+            $result = $this->chat->sendGroupMessage($senderId, $groupId, $message);
+            if ($result['success']) {
+                $data['message_id'] = $result['message_id'];
+            }
+        }
+        
+        echo "Group message sent from {$senderId} to group {$groupId}: {$message}\n";
+        
+        // Send to all group members (except sender)
+        foreach ($this->users as $userId => $user) {
+            if ($user['user_id'] != $senderId) {
+                // Check if user is member of the group (this would need to be implemented)
+                // For now, send to all users
+                $user['connection']->send(json_encode([
+                    'type' => 'group_message',
+                    'sender_id' => $senderId,
+                    'group_id' => $groupId,
+                    'message' => $message,
+                    'timestamp' => $timestamp,
+                    'message_id' => $data['message_id'] ?? null
+                ]));
             }
         }
     }

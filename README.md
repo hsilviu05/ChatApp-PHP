@@ -8,6 +8,7 @@ A modern, real-time chat application built with PHP, WebSockets, and MySQL. Feat
 - 💬 **Real-time Messaging** - Instant message delivery via WebSockets
 - 🔄 **Message History** - Persistent message storage in MySQL
 - 🔍 **Advanced Message Search** - Search through conversation history with filters
+- 👥 **Groups & Channels** - Create and manage group conversations
 - 👀 **Typing Indicators** - See when someone is typing
 - ✅ **Read Status** - Track message delivery and read status
 - 📱 **Responsive Design** - Works on desktop and mobile
@@ -82,19 +83,30 @@ ChatApp/
 │   ├── login.php          # Login/register page
 │   ├── logout.php         # Logout handler
 │   ├── search-interface.php # Search interface component
+│   ├── groups-interface.php # Groups interface component
 │   └── api/               # API endpoints
 │       ├── send-message.php
 │       ├── get-messages.php
 │       ├── search-messages.php
+│       ├── create-group.php
+│       ├── get-groups.php
+│       ├── get-group-messages.php
+│       ├── send-group-message.php
 │       ├── mark-read.php
 │       ├── mark-conversation-read.php
-│       └── get-unread-count.php
+│       ├── get-users.php
+│       ├── get-current-user.php
+│       ├── get-unread-count.php
+│       ├── upload-file.php
+│       ├── get-message-attachments.php
+│       └── download-file.php
 ├── server/
 │   └── chat-server.php    # WebSocket server
 └── src/                   # PHP classes
     ├── Db.php             # Database connection
     ├── User.php           # User management
-    └── Chat.php           # Chat functionality
+    ├── Chat.php           # Chat functionality
+    └── Group.php          # Group management
 ```
 
 ## 🔧 Configuration
@@ -135,6 +147,14 @@ The WebSocket server runs on `localhost:8080` by default. You can modify this in
 4. Click "Search" or press Enter
 5. Browse results and click on any message to open that conversation
 
+### Using Groups
+1. Click the groups icon in the header
+2. **My Groups**: View groups you're a member of
+3. **Create Group**: Start a new group with a name and select members
+4. **Discover**: Browse available groups to join
+5. Click on any group to open the group chat
+6. Send messages that all group members can see
+
 ## 🔒 Security Features
 
 - Password hashing using PHP's `password_hash()`
@@ -153,6 +173,15 @@ The WebSocket server runs on `localhost:8080` by default. You can modify this in
 - **Highlighted Results**: Search terms are highlighted in results
 - **Pagination**: Navigate through large result sets
 - **Keyboard Shortcuts**: Use Ctrl+F to open search
+
+### Groups & Channels
+- **Create Groups**: Create new group conversations with custom names
+- **Add Members**: Invite users to join your groups
+- **Group Chat**: Send messages to multiple users simultaneously
+- **Group Management**: View group info, member count, and creator details
+- **Real-time Updates**: Group messages update in real-time via WebSockets
+- **Member Management**: Add/remove members (group creator only)
+- **Group Discovery**: Browse available groups to join
 
 ### Typing Indicators
 When a user starts typing, other users will see a "typing..." indicator.

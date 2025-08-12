@@ -8,13 +8,13 @@ class Chat {
         $this->db = Db::getInstance()->getConnection();
     }
     
-    public function sendMessage($senderId, $receiverId, $message, $type = 'private') {
+    public function sendMessage($senderId, $receiverId, $message, $type = 'private', $groupId = null) {
         $stmt = $this->db->prepare(
-            "INSERT INTO messages (sender_id, receiver_id, message, message_type) 
-             VALUES (?, ?, ?, ?)"
+            "INSERT INTO messages (sender_id, receiver_id, group_id, message, message_type) 
+             VALUES (?, ?, ?, ?, ?)"
         );
         
-        if ($stmt->execute([$senderId, $receiverId, $message, $type])) {
+        if ($stmt->execute([$senderId, $receiverId, $groupId, $message, $type])) {
             return [
                 'success' => true,
                 'message_id' => $this->db->lastInsertId(),
@@ -340,5 +340,112 @@ class Chat {
         // Case-insensitive replacement with highlighting
         $pattern = '/(' . preg_quote($searchTerm, '/') . ')/i';
         return preg_replace($pattern, '<mark class="search-highlight">$1</mark>', $text);
+    }
+    
+    // ===== GROUP MESSAGE METHODS =====
+    
+    /**
+     * Send a message to a group
+     */
+    public function sendGroupMessage($senderId, $groupId, $message) {
+        return $this->sendMessage($senderId, null, $message, 'group', $groupId);
+    }
+    
+    /**
+     * Get group messages
+     */
+    public function getGroupMessages($groupId, $limit = 50) {
+        $stmt = $this->db->prepare(
+            "SELECT m.*, u.username as sender_name,
+                    GROUP_CONCAT(
+                        JSON_OBJECT(
+                            'id', fa.id,
+                            'filename', fa.filename,
+                            'original_filename', fa.original_filename,
+                            'file_size', fa.file_size,
+                            'mime_type', fa.mime_type
+                        )
+                    ) as attachments
+             FROM messages m 
+             JOIN users u ON m.sender_id = u.id 
+             LEFT JOIN file_attachments fa ON m.id = fa.message_id
+             WHERE m.group_id = ? AND m.message_type = 'group'
+             GROUP BY m.id
+             ORDER BY m.created_at DESC
+             LIMIT ?"
+        );
+        $stmt->execute([$groupId, $limit]);
+        $messages = $stmt->fetchAll();
+        
+        // Process attachments and format dates
+        foreach ($messages as &$message) {
+            if ($message['attachments']) {
+                $message['attachments'] = json_decode('[' . $message['attachments'] . ']', true);
+            } else {
+                $message['attachments'] = [];
+            }
+            
+            // Format created_at
+            if (isset($message['created_at']) && $message['created_at']) {
+                $timestamp = strtotime($message['created_at']);
+                if ($timestamp && $timestamp > 0) {
+                    $message['created_at'] = date('c', $timestamp);
+                } else {
+                    $message['created_at'] = date('c');
+                }
+            } else {
+                $message['created_at'] = date('c');
+            }
+        }
+        
+        // Reverse to get chronological order
+        return array_reverse($messages);
+    }
+    
+    /**
+     * Get recent group conversations for a user
+     */
+    public function getRecentGroupConversations($userId, $limit = 20) {
+        $stmt = $this->db->prepare(
+            "SELECT g.*, 
+                    (SELECT COUNT(*) FROM group_members WHERE group_id = g.id) as member_count,
+                    (SELECT username FROM users WHERE id = g.created_by) as creator_name,
+                    (SELECT message FROM messages WHERE group_id = g.id ORDER BY created_at DESC LIMIT 1) as last_message,
+                    (SELECT created_at FROM messages WHERE group_id = g.id ORDER BY created_at DESC LIMIT 1) as last_message_time
+             FROM `groups` g
+             JOIN group_members gm ON g.id = gm.group_id
+             WHERE gm.user_id = ?
+             ORDER BY last_message_time DESC NULLS LAST, g.created_at DESC
+             LIMIT ?"
+        );
+        $stmt->execute([$userId, $limit]);
+        return $stmt->fetchAll();
+    }
+    
+    /**
+     * Mark group messages as read for a user
+     */
+    public function markGroupAsRead($groupId, $userId) {
+        $stmt = $this->db->prepare(
+            "UPDATE messages 
+             SET is_read = TRUE 
+             WHERE group_id = ? AND receiver_id = ? AND is_read = FALSE"
+        );
+        return $stmt->execute([$groupId, $userId]);
+    }
+    
+    /**
+     * Get unread group message count for a user
+     */
+    public function getUnreadGroupCount($userId) {
+        $stmt = $this->db->prepare(
+            "SELECT COUNT(*) as count 
+             FROM messages m
+             JOIN group_members gm ON m.group_id = gm.group_id
+             WHERE m.receiver_id = ? AND m.is_read = FALSE AND m.message_type = 'group'"
+        );
+        $stmt->execute([$userId]);
+        $result = $stmt->fetch();
+        return $result['count'];
     }
 }

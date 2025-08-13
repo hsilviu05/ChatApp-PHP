@@ -9,6 +9,7 @@ A modern, real-time chat application built with PHP, WebSockets, and MySQL. Feat
 - 🔄 **Message History** - Persistent message storage in MySQL
 - 🔍 **Advanced Message Search** - Search through conversation history with filters
 - 👥 **Groups & Channels** - Create and manage group conversations
+- 😀 **Message Reactions** - React to messages with emojis
 - 👀 **Typing Indicators** - See when someone is typing
 - ✅ **Read Status** - Track message delivery and read status
 - 📱 **Responsive Design** - Works on desktop and mobile
@@ -84,6 +85,7 @@ ChatApp/
 │   ├── logout.php         # Logout handler
 │   ├── search-interface.php # Search interface component
 │   ├── groups-interface.php # Groups interface component
+│   ├── reactions-interface.php # Reactions interface component
 │   └── api/               # API endpoints
 │       ├── send-message.php
 │       ├── get-messages.php
@@ -92,6 +94,8 @@ ChatApp/
 │       ├── get-groups.php
 │       ├── get-group-messages.php
 │       ├── send-group-message.php
+│       ├── toggle-reaction.php
+│       ├── get-message-reactions.php
 │       ├── mark-read.php
 │       ├── mark-conversation-read.php
 │       ├── get-users.php
@@ -106,7 +110,8 @@ ChatApp/
     ├── Db.php             # Database connection
     ├── User.php           # User management
     ├── Chat.php           # Chat functionality
-    └── Group.php          # Group management
+    ├── Group.php          # Group management
+    └── Reaction.php       # Reaction management
 ```
 
 ## 🔧 Configuration
@@ -155,6 +160,13 @@ The WebSocket server runs on `localhost:8080` by default. You can modify this in
 5. Click on any group to open the group chat
 6. Send messages that all group members can see
 
+### Using Reactions
+1. **Add Reaction**: Click the "Add" button below any message
+2. **Choose Emoji**: Select from 10 available emoji reactions
+3. **Toggle Reaction**: Click the same emoji again to remove it
+4. **View Reactions**: Hover over reaction buttons to see who reacted
+5. **Real-time Updates**: Reactions appear instantly for all users
+
 ## 🔒 Security Features
 
 - Password hashing using PHP's `password_hash()`
@@ -182,6 +194,14 @@ The WebSocket server runs on `localhost:8080` by default. You can modify this in
 - **Real-time Updates**: Group messages update in real-time via WebSockets
 - **Member Management**: Add/remove members (group creator only)
 - **Group Discovery**: Browse available groups to join
+
+### Message Reactions
+- **Emoji Reactions**: React to messages with 10 different emojis (👍👎❤️😂😮😢😡🎉👏🔥)
+- **Click to React**: Click on any message to add your reaction
+- **Toggle Reactions**: Click again to remove your reaction
+- **Real-time Updates**: See reactions instantly across all users
+- **Reaction Counts**: View how many people reacted with each emoji
+- **User Feedback**: Visual indicators show your own reactions
 
 ### Typing Indicators
 When a user starts typing, other users will see a "typing..." indicator.

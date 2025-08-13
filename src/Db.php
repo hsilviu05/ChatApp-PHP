@@ -94,6 +94,17 @@ class Db {
                 mime_type VARCHAR(100) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
+            )",
+            // Message reactions table
+            "CREATE TABLE IF NOT EXISTS message_reactions (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                message_id INT NOT NULL,
+                user_id INT NOT NULL,
+                reaction_type VARCHAR(20) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_message_user_reaction (message_id, user_id, reaction_type)
             )"
         ];
         try {

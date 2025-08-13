@@ -478,6 +478,7 @@ $recentMessages = $chat->getRecentMessages($currentUser['id']);
 
     <?php include 'search-interface.php'; ?>
     <?php include 'groups-interface.php'; ?>
+    <?php include 'reactions-interface.php'; ?>
 
     <script src="js/app.js"></script>
 </body>

@@ -141,6 +141,9 @@ function handleWebSocketMessage(data) {
         case 'read':
             handleReadReceipt(data);
             break;
+        case 'reaction_update':
+            handleReactionUpdate(data);
+            break;
         default:
             console.log('Unknown message type:', data.type);
     }
@@ -210,6 +213,15 @@ function fetchLatestMessageWithAttachments(senderId, originalData) {
             console.error('Error fetching message with attachments:', error);
             displayMessage(originalData);
         });
+}
+
+function handleReactionUpdate(data) {
+    console.log('Handling reaction update:', data);
+    
+    // Update the message reactions display
+    if (window.updateMessageReactions) {
+        window.updateMessageReactions(data.message_id, data.reactions, data.user_reactions);
+    }
 }
 
 function handleTypingIndicator(data) {
@@ -365,10 +377,44 @@ function displayMessage(message) {
                 ${time}${seenIndicator}
             </div>
         </div>
+        <div class="message-reactions">
+            ${generateReactionsHtml(message)}
+        </div>
     `;
+    
+    // Add data attribute for message ID
+    messageDiv.setAttribute('data-message-id', message.id);
     
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
+}
+
+function generateReactionsHtml(message) {
+    let reactionsHtml = '';
+    
+    // Add existing reactions
+    if (message.reactions && message.reactions.length > 0) {
+        message.reactions.forEach(reaction => {
+            const isUserReacted = message.user_reactions && message.user_reactions.includes(reaction.type);
+            reactionsHtml += `
+                <button class="reaction-button ${isUserReacted ? 'active' : ''}" 
+                        onclick="addReaction('${reaction.type}')" 
+                        data-reaction-type="${reaction.type}">
+                    <span class="reaction-emoji">${reaction.emoji}</span>
+                    <span class="reaction-count">${reaction.count}</span>
+                </button>
+            `;
+        });
+    }
+    
+    // Add "add reaction" button
+    reactionsHtml += `
+        <button class="add-reaction-btn" onclick="showReactionPicker(${message.id}, event)">
+            <i class="fas fa-plus"></i> Add
+        </button>
+    `;
+    
+    return reactionsHtml;
 }
 
 function getFileIcon(mimeType) {

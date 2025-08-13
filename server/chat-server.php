@@ -44,6 +44,9 @@ class ChatWebSocket implements MessageComponentInterface {
             case 'group_message':
                 $this->handleGroupMessage($from, $data);
                 break;
+            case 'reaction_update':
+                $this->handleReactionUpdate($from, $data);
+                break;
             case 'typing':
                 $this->handleTyping($from, $data);
                 break;
@@ -196,6 +199,34 @@ class ChatWebSocket implements MessageComponentInterface {
         foreach ($this->clients as $client) {
             if ($from !== $client) {
                 $client->send(json_encode($data));
+            }
+        }
+    }
+    
+    /**
+     * Handle reaction updates
+     */
+    private function handleReactionUpdate($from, $data) {
+        $messageId = $data['message_id'] ?? null;
+        $reactions = $data['reactions'] ?? [];
+        $userReactions = $data['user_reactions'] ?? [];
+        
+        if (!$messageId) {
+            echo "Invalid reaction update data\n";
+            return;
+        }
+        
+        echo "Reaction update for message {$messageId}\n";
+        
+        // Broadcast reaction update to all connected clients
+        foreach ($this->clients as $client) {
+            if ($from !== $client) {
+                $client->send(json_encode([
+                    'type' => 'reaction_update',
+                    'message_id' => $messageId,
+                    'reactions' => $reactions,
+                    'user_reactions' => $userReactions
+                ]));
             }
         }
     }

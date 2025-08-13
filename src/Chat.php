@@ -194,6 +194,42 @@ class Chat {
         return array_reverse($messages);
     }
     
+    /**
+     * Get messages with attachments and reactions
+     */
+    public function getMessagesWithAttachmentsAndReactions($userId1, $userId2, $limit = 50) {
+        $messages = $this->getMessagesWithAttachments($userId1, $userId2, $limit);
+        
+        // Get reaction data for all messages
+        $reaction = new \ChatApp\Reaction();
+        $messageIds = array_column($messages, 'id');
+        
+        if (!empty($messageIds)) {
+            $reactionSummary = $reaction->getReactionSummary($messageIds);
+            $userReactions = $reaction->getUserReactionsForMessages($userId1, $messageIds);
+            
+            // Add reaction data to messages
+            foreach ($messages as &$message) {
+                $message['reactions'] = [];
+                $message['user_reactions'] = $userReactions[$message['id']] ?? [];
+                
+                // Add reaction summary
+                foreach ($reactionSummary as $reactionData) {
+                    if ($reactionData['message_id'] == $message['id']) {
+                        $message['reactions'][] = [
+                            'type' => $reactionData['reaction_type'],
+                            'count' => $reactionData['count'],
+                            'emoji' => $reaction->getReactionEmoji($reactionData['reaction_type']),
+                            'user_ids' => explode(',', $reactionData['user_ids'])
+                        ];
+                    }
+                }
+            }
+        }
+        
+        return $messages;
+    }
+    
     public function getSeenStatus($messageId) {
         $stmt = $this->db->prepare(
             "SELECT is_read, created_at FROM messages WHERE id = ?"

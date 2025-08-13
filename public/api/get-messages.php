@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $currentUserId = $_SESSION['user_id'];
     
     $chat = new Chat();
-    $messages = $chat->getMessagesWithAttachments($currentUserId, $otherUserId, $limit);
+    $messages = $chat->getMessagesWithAttachmentsAndReactions($currentUserId, $otherUserId, $limit);
     
     // Debug output
     error_log("[get-messages] currentUserId={$currentUserId}, otherUserId={$otherUserId}, messagesReturned=" . count($messages));
